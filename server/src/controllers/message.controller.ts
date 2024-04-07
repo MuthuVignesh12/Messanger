@@ -3,6 +3,7 @@ import { CustomRequest } from "../types/common.types";
 import Conversation from "../models/conversation.model";
 import Message from "../models/message.model";
 import { ResponseUtil } from "../utils/Response.utils";
+import { createConversation, findConversationByIds, getMessagesByUserIds } from "../services/converstation.service";
 
 export const sendMessage = async (req: CustomRequest, res: Response) => {
   try {
@@ -10,16 +11,10 @@ export const sendMessage = async (req: CustomRequest, res: Response) => {
     const { id: recieverId } = req.params;
     const senderId = req.user?._id
 
-    console.log({ senderId, recieverId })
-      ;
-    let conversation = await Conversation.findOne({
-      participants: { $all: [senderId, recieverId] }
-    })
+    let conversation = await findConversationByIds([senderId, recieverId]);
 
     if (!conversation) {
-      conversation = await Conversation.create({
-        participants: [senderId, recieverId]
-      })
+      conversation = await createConversation([senderId, recieverId])
     }
 
     const newMessage = new Message({
@@ -29,10 +24,10 @@ export const sendMessage = async (req: CustomRequest, res: Response) => {
     });
 
     if (newMessage) {
-      conversation.messages.push(newMessage._id);
+      conversation?.messages.push(newMessage._id);
     }
 
-    await Promise.all([conversation.save(), newMessage.save()])
+    await Promise.all([conversation?.save(), newMessage.save()])
 
     return ResponseUtil.sendSuccessResponse(res, 200, "", newMessage)
   } catch (error) {
@@ -40,13 +35,11 @@ export const sendMessage = async (req: CustomRequest, res: Response) => {
   }
 }
 
-export const getMessages = async (req: CustomRequest, res: Response) => {
+export const getMessagesOfUser = async (req: CustomRequest, res: Response) => {
   try {
     const { id: userToChatId } = req.params;
     const senderId = req.user?._id;
-    let conversation = await Conversation.findOne({
-      participants: { $all: [senderId, userToChatId] }
-    }).populate('messages');
+    let conversation = await getMessagesByUserIds([senderId, userToChatId]);
 
     if (!conversation) {
       return ResponseUtil.sendSuccessResponse(res, 200, "", []);

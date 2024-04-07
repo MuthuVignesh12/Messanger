@@ -10,18 +10,15 @@ export const signUp = async (req: Request, res: Response) => {
     const { firstName, lastName, userName, password, confirmPassword, gender, profilePic = '' } = req.body
     const profile = `https://avatar.iran.liara.run/public/${gender === 'male' ? 'boy' : 'girl'}?userName=${userName}`;
 
-
     if (confirmPassword !== password) {
       return ResponseUtil.sendErrorResponse(res, 400, "Password doesnot matches with Confirm Password");
     }
-
 
     // Check If user already exists
     const alreadyExistingUser = await getUserByUserName(userName);
     if (alreadyExistingUser) {
       return ResponseUtil.sendErrorResponse(res, 400, "UserName Already Exists");
     }
-
 
     // Generate Hash for the password
     const salt = await bcrypt.genSalt(10);
@@ -51,6 +48,7 @@ export const signUp = async (req: Request, res: Response) => {
         username: createdUser.username,
         profilePic: createdUser.profilePic,
       });
+
     } else {
       return ResponseUtil.sendErrorResponse(res, 400, 'Failed to Create User');
     }
